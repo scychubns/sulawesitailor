@@ -296,7 +296,7 @@ export function computePleated(measurements, count) {
   if (hip < waist) {
     return {
       status: "error",
-      message: "Lingkar pinggul tidak boleh lebih kecil dari lingkar pinggang.",
+      message: "",
     };
   }
   if (!Number.isInteger(count) || count < 4 || count > 60) {
@@ -992,7 +992,7 @@ export default function SkirtPatternPreview({ design, measurements }) {
     );
   }
   if (pattern.status === "error") {
-    return <p role="alert">{pattern.message}</p>;
+    return null;
   }
   const extras = normalizeExtras(design, pattern.length);
   if (pattern.type === "pleated") {

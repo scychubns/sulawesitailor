@@ -727,7 +727,7 @@ export default function SkirtFinalPreview({
   }
 
   if (pattern.status === "error") {
-    return <p role="alert">{pattern.message}</p>;
+    return null;
   }
 
   const rawGeo = buildGeometry(pattern);

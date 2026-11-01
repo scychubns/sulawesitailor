@@ -292,67 +292,69 @@ function AppContent() {
     };
   }, [location.pathname, location.search, user?.id]);
 
-  // Memilih pelanggan
-  async function handleSelectCustomer(name) {
-    const selectedCustomer = customers.find(
-      (item) => item.name === name
-    );
+  // // Memilih pelanggan
+  // async function handleSelectCustomer(name) {
+  //   const selectedCustomer = customers.find(
+  //     (item) => item.name === name
+  //   );
 
-    setCustomer(name);
-    setCustomerId(selectedCustomer?.id ?? null);
-    // resetNewDesign();
+  //   setCustomer(name);
+  //   setCustomerId(selectedCustomer?.id ?? null);
+  //   // resetNewDesign();
 
-    if (!selectedCustomer) {
-      setTotalDesain(0);
-      setDesignTitle("Desain 1");
-      setMeasurements(createEmptyMeasurements());
-      return;
-    }
+  //   if (!selectedCustomer) {
+  //     setTotalDesain(0);
+  //     setDesignTitle("Desain 1");
+  //     setMeasurements(createEmptyMeasurements());
+  //     return;
+  //   }
 
-    try {
-      await fetchTotalDesain(selectedCustomer.id);
+  //   try {
+  //     await fetchTotalDesain(selectedCustomer.id);
 
-      const { data, error } = await supabase
-        .from("saved_designs")
-        .select("measurements")
-        .eq("customer_id", selectedCustomer.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  //     const { data, error } = await supabase
+  //       .from("saved_designs")
+  //       .select("measurements")
+  //       .eq("customer_id", selectedCustomer.id)
+  //       .order("created_at", { ascending: false })
+  //       .limit(1)
+  //       .maybeSingle();
 
-      if (error) throw error;
+  //     if (error) throw error;
 
-      setMeasurements({
-        ...createEmptyMeasurements(),
-        ...(data?.measurements ?? {}),
-      });
-    } catch (error) {
-      console.error(
-        "Gagal mengambil data pelanggan:",
-        error.message
-      );
-    }
-  }
+  //     setMeasurements({
+  //       ...createEmptyMeasurements(),
+  //       ...(data?.measurements ?? {}),
+  //     });
+  //   } catch (error) {
+  //     console.error(
+  //       "Gagal mengambil data pelanggan:",
+  //       error.message
+  //     );
+  //   }
+  // }
   
-  async function handleCustomerChange(customerName) {
-    if (!customerName) return;
+const isFilled = (v) => v !== "" && v != null;
+const hasAnyMeasurement = (m) =>
+  ["waist", "hip", "skirtLength"].some((k) => isFilled(m?.[k]));
 
-    const selectedCustomer = customers.find(
-      (item) => item.name === customerName
-    );
+async function handleCustomerChange(customerName) {
+  if (!customerName) return;
 
-    if (!selectedCustomer) return;
+  const selectedCustomer = customers.find(
+    (item) => item.name === customerName
+  );
+  if (!selectedCustomer) return;
 
-    // Selalu perbarui identitas pelanggan.
-    setCustomer(selectedCustomer.name);
-    setCustomerId(selectedCustomer.id);
+  // Identitas pelanggan selalu diperbarui
+  setCustomer(selectedCustomer.name);
+  setCustomerId(selectedCustomer.id);
 
-    // Jika konfigurasi sudah diubah, pertahankan semua isian.
-    if (hasEditedConfiguration) {
   try {
+    // Ambil desain terakhir milik pelanggan
     const { data, error } = await supabase
       .from("saved_designs")
-      .select("measurements")
+      .select("*")
       .eq("customer_id", selectedCustomer.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -360,66 +362,37 @@ function AppContent() {
 
     if (error) throw error;
 
-    // Hanya mengganti ukuran pelanggan.
-    // Desain, judul, warna, dan motif tetap dipertahankan.
-    if (data?.measurements) {
-      setMeasurements({
-        ...createEmptyMeasurements(),
-        ...data.measurements,
-      });
-    }
+    // UKURAN: input yang sudah diisi tidak boleh tertimpa.
+    // Data lama hanya dipakai kalau ketiga kolom masih kosong.
+    setMeasurements((current) =>
+      hasAnyMeasurement(current)
+        ? current
+        : { ...createEmptyMeasurements(), ...(data?.measurements ?? {}) }
+    );
 
-    return;
+    // DESAIN: kalau sudah ada perubahan, pertahankan semuanya.
+    if (hasEditedConfiguration) return;
+
+    const lastId = await fetchTotalDesain();
+    setDesignId(null);
+    setStatus("Draft");
+    setDesignTitle(`Desain ${lastId + 1}`); // judul baru, bukan salinan judul lama
+
+    if (data) {
+      setDesign({
+        ...createDefaultDesign(),
+        ...(data.design ?? {}),
+        model: data.design?.model || createDefaultDesign().model, // fallback A-line
+        motifFile: null,
+      });
+    } else {
+      setDesign(createDefaultDesign());
+    }
   } catch (error) {
-    console.error("Gagal memuat ukuran pelanggan:", error);
-    alert(`Gagal memuat ukuran pelanggan: ${error.message}`);
-    return;
+    console.error("Gagal memuat data pelanggan:", error);
+    alert(`Gagal memuat data pelanggan: ${error.message}`);
   }
 }
-
-    try {
-      // Ambil desain terakhir milik pelanggan.
-      const { data, error } = await supabase
-        .from("saved_designs")
-        .select("*")
-        .eq("customer_id", selectedCustomer.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setDesignId(null);
-
-        setDesign({
-          ...createDefaultDesign(),
-          ...(data.design ?? {}),
-          motifFile: null,
-        });
-
-        setMeasurements({
-          ...createEmptyMeasurements(),
-          ...(data.measurements ?? {}),
-        });
-
-        setDesignTitle(data.title || "");
-        setStatus("Draft");
-      } else {
-        // Pelanggan belum mempunyai desain tersimpan.
-        setDesignId(null);
-        setDesign(createDefaultDesign());
-        setMeasurements(createEmptyMeasurements());
-        setStatus("Draft");
-
-        const lastId = await fetchTotalDesain();
-        setDesignTitle(`Desain ${lastId + 1}`);
-      }
-    } catch (error) {
-      console.error("Gagal memuat desain pelanggan:", error);
-      alert(`Gagal memuat desain: ${error.message}`);
-    }
-  }
 
   // Menambahkan pelanggan baru
   async function handleAddCustomer(name) {
