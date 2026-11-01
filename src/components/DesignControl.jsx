@@ -422,9 +422,9 @@ function OccasionRecommendation({ design, onChange, disabled }) {
             ))}
           </ul>
 
-          <span style={{ fontSize: 11, opacity: 0.7 }}>
+          {/* <span style={{ fontSize: 11, opacity: 0.7 }}>
             Rekomendasi hanya saran umum. Pilih model, panjang, dan ornamen sendiri pada form di bawah.
-          </span>
+          </span> */}
         </div>
       )}
     </div>
@@ -532,10 +532,11 @@ const handleRemoveMotif = () => {
       <label>
         Model Rok
         <select
-          value={design.model}
+          value={design.model || ""}
           disabled={disabled}
           onChange={(e) => onChange("model", e.target.value)}
         >
+          <option value="" disabled>Pilih model</option>
           <option value="A-Line">A-Line</option>
           <option value="Plated">Plated</option>
         </select>
