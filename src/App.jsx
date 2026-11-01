@@ -10,7 +10,7 @@ import {
 
 import { supabase } from "./lib/supabase";
 import Navbar from "./components/Navbar";
-import HomePage from "./pages/HomePage";
+import HomePage from "./pages/Homepage";
 import ConfigurationPage from "./pages/ConfigurationPage";
 import CustomersPage from "./pages/CustomersPage";
 import CustomerDesign from "./pages/CustomerDesign";
