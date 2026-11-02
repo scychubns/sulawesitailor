@@ -155,6 +155,7 @@ export default function ConfigurationPage({
         status={status}
         onSave={onSave}
         disabled={readOnly}
+        measurements={measurements}
       />
     </main>
   );
