@@ -2,7 +2,7 @@ export const FABRIC_SUGGESTIONS = {
   pleated: {
     incompatible: ["jersey", "cotton", "rayon", "katun", "kaos"],
     recommended: ["Polyester", "Satin", "Chiffon", "Semi-Wool"],
-    reason: "Model plisket/plated memerlukan bahan sintetis yang stabil agar lipatan kain tahan lama dan tidak hilang setelah dicuci.",
+    reason: "Model plisket/pleated memerlukan bahan sintetis yang stabil agar lipatan kain tahan lama dan tidak hilang setelah dicuci.",
   },
   pencil: {
     incompatible: ["chiffon", "organza", "sifon"],
@@ -25,7 +25,7 @@ export function validateFabricAndModel(model, fabricType) {
   const normalizedModel = String(model).toLowerCase().trim();
   const normalizedFabric = String(fabricType).toLowerCase().trim();
 
-  // Pemetaan kata kunci model (mencakup 'plated', 'pleat', 'pleated', 'plisket')
+  // Pemetaan kata kunci model (mencakup 'pleated', 'pleat', 'pleated', 'plisket')
   let key = "a-line";
   if (
     normalizedModel.includes("plisket") || 

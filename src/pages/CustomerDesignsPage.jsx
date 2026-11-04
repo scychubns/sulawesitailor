@@ -32,8 +32,8 @@ const designs = [
   {
     id: "DES-002",
     customerId: "PLG-001",
-    name: "Rok Plated Biru",
-    model: "Plated",
+    name: "Rok Pleated Biru",
+    model: "Pleated",
     length: "Panjang",
     color: "#4267b2",
     pocket: "2 kantong",
@@ -52,8 +52,8 @@ const designs = [
   {
     id: "DES-004",
     customerId: "PLG-002",
-    name: "Rok Plated Merah",
-    model: "Plated",
+    name: "Rok Pleated Merah",
+    model: "Pleated",
     length: "Panjang",
     color: "#a83248",
     pocket: "Kanan",
@@ -63,7 +63,7 @@ const designs = [
 
 function SkirtPreview({ design }) {
   const isLong = design.length === "Panjang";
-  const isPleated = design.model === "Plated";
+  const isPleated = design.model === "Pleated";
 
   const bottom = isLong ? 245 : 155;
   const center = 150;

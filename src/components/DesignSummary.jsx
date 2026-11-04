@@ -114,7 +114,7 @@ export default function DesignSummary({
 
   return (
     <section className="panel save-panel">
-      <div style={{display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)"}}>
+      <div style={{display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)", marginTop: 30}}>
         <div>
           <h2>4. Ringkasan Desain</h2>
           <div>

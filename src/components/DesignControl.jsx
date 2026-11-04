@@ -1,10 +1,26 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { duplicateExtra, layerInfo, nextZ, removeExtraAt, shiftLayer, withIds } from "./ornaments";
+import { validateFabricAndModel } from "../utils/fabricRules";
 
 /* ---------- Dekorasi tambahan (design.extras) ---------- */
 const MAX_EXTRAS = 12;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MODEL_RULE_KEY = { "A-Line": "a-line", Pleated: "plisket", Pensil: "pensil" };
 
+const FABRICS = [
+  { value: "cotton", label: "Katun Murni" },
+  { value: "chiffon", label: "Chiffon / Sifon" },
+  { value: "polyester", label: "Polyester" },
+  { value: "jersey", label: "Kaos / Jersey" },
+  { value: "denim", label: "Denim / Jeans" },
+];
+const warningBoxStyle = {
+  backgroundColor: "#fffbe6",
+  border: "1px solid #ffe58f",
+  borderRadius: 8,
+  padding: "12px 16px",
+  color: "#8c6b00",
+};
 const EXTRA_PRESETS = {
   lace: {
     label: "Renda",
@@ -321,7 +337,7 @@ const OCCASIONS = {
     label: "Formal",
     hint: "kantor, wisuda, acara resmi",
     primary: {
-      model: "Plated",
+      model: "Pleated",
       length: "Panjang",
       why: "Lipit yang rapi dan jatuhnya yang anggun memberi kesan resmi dan elegan.",
     },
@@ -345,7 +361,7 @@ const OCCASIONS = {
       why: "Ringan, mudah bergerak, dan memberi kesan santai.",
     },
     alternative: {
-      model: "Plated",
+      model: "Pleated",
       length: "Pendek",
       why: "Lipit memberi kesan ceria dan bergaya, tetap nyaman dipakai sehari-hari.",
     },
@@ -514,7 +530,10 @@ const handleRemoveMotif = () => {
     motifUploadRef.current.value = "";
   }
 };
-
+const suggestion = useMemo(
+  () => validateFabricAndModel(MODEL_RULE_KEY[design.model] || design.model, design.fabricType),
+  [design.model, design.fabricType]
+);
   return (
     <div
       className="panel controls"
@@ -538,22 +557,37 @@ const handleRemoveMotif = () => {
         >
           <option value="" disabled>Pilih model</option>
           <option value="A-Line">A-Line</option>
-          <option value="Plated">Plated</option>
+          <option value="Pleated">Pleated</option>
+          <option value="Pensil">Pensil</option>
+        </select>
+      </label>
+      <label>
+        Jenis Bahan Kain
+        <select
+          value={design.fabricType || "cotton"}
+          disabled={disabled}
+          onChange={(e) => onChange("fabricType", e.target.value)}
+        >
+          {FABRICS.map((f) => (
+            <option key={f.value} value={f.value}>{f.label}</option>
+          ))}
         </select>
       </label>
 
-      {/* <label>
-        Panjang Rok
-        <select
-          value={design.length}
-          disabled={disabled}
-          onChange={(e) => onChange("length", e.target.value)}
-        >
-          <option value="Pendek">Pendek</option>
-          <option value="Panjang">Panjang</option>
-        </select>
-      </label> */}
-
+      {suggestion && (
+        <div style={{ ...warningBoxStyle, margin: "8px 0 12px" }}>
+          <div style={{ fontWeight: "bold", marginBottom: 4 }}>💡 {suggestion.title}</div>
+          <p style={{ margin: "4px 0", fontSize: 13 }}>{suggestion.message}</p>
+          <div style={{ marginTop: 8, fontSize: 12 }}>
+            <strong>Rekomendasi bahan terbaik untuk model ini:</strong>
+            <ul style={{ margin: "4px 0 0 18px", padding: 0 }}>
+              {(suggestion.recommendedFabrics || []).map((fab) => (
+                <li key={fab}>{fab}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
       <label>
         Kantong Rok
         <select
