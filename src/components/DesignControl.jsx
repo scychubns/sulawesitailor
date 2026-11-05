@@ -13,6 +13,7 @@ const FABRICS = [
   { value: "polyester", label: "Polyester" },
   { value: "jersey", label: "Kaos / Jersey" },
   { value: "denim", label: "Denim / Jeans" },
+  { value: "batik", label: "Batik" },
 ];
 const warningBoxStyle = {
   backgroundColor: "#fffbe6",
@@ -36,13 +37,13 @@ const EXTRA_PRESETS = {
       w: "", x: "0", color: "#ffffff", opacity: "0.9", tileSize: "15", image: "", blend: "auto",
     }),
   },
-  ribbon: {
-    label: "Pita",
-    make: () => ({
-      type: "ribbon", part: "both", anchor: "waist", y: "10", h: "1.5",
-      w: "", x: "0", color: "#c0392b",
-    }),
-  },
+  // ribbon: {
+  //   label: "Pita",
+  //   make: () => ({
+  //     type: "ribbon", part: "both", anchor: "waist", y: "10", h: "1.5",
+  //     w: "", x: "0", color: "#c0392b",
+  //   }),
+  // },
 };
 
 const newId = () =>
@@ -348,7 +349,7 @@ const OCCASIONS = {
     },
     tips: [
       "Pilih warna netral atau gelap, misalnya hitam, navy, abu-abu, atau krem.",
-      "Ornamen secukupnya: pita tipis atau renda sempit di hem. Layer brokat cocok untuk acara resmi seperti kondangan.",
+      "Ornamen secukupnya: renda sempit di hem. Layer brokat cocok untuk acara resmi seperti kondangan.",
       "Kantong sebaiknya tidak ada atau hanya satu sisi agar siluet tetap rapi.",
     ],
   },
@@ -367,7 +368,7 @@ const OCCASIONS = {
     },
     tips: [
       "Warna cerah atau motif, termasuk batik modern, cocok untuk tampilan santai.",
-      "Ornamen lebih bebas: renda di hem atau pita berwarna memberi kesan manis.",
+      "Ornamen lebih bebas: renda di hem memberi kesan manis.",
       "Kantong kiri dan kanan praktis untuk dibawa bepergian.",
     ],
   },
