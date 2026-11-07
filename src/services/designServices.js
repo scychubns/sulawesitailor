@@ -2,7 +2,7 @@
 import { supabase } from "../lib/supabase";
 
 export const createDefaultDesign = () => ({
-  model: "",
+  model: "A-line",
   pocket: "Tanpa kantong",
   color: "#ffffff",
   motifImage: "",

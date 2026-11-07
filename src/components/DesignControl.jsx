@@ -390,7 +390,7 @@ function OccasionRecommendation({ design, onChange, disabled }) {
   const info = current ? OCCASIONS[current] : null;
 
   return (
-    <div style={{ display: "grid", gap: 8, margin: "0 0 12px" }}>
+    <div style={{ display: "grid", gap: 8}}>
       <span style={{ fontWeight: 600 }}>Jenis Acara</span>
       <div style={{ ...rowStyle, gap: 10 }}>
         {Object.entries(OCCASIONS).map(([key, o]) => {
@@ -538,12 +538,12 @@ const suggestion = useMemo(
   return (
     <div
       className="panel controls"
-      style={{
-        maxHeight,
-        overflowY: "auto",
-        overscrollBehavior: "contain", // gulir form tidak ikut menggulir halaman
-        scrollbarGutter: "stable",
-      }}
+      // style={{
+      //   maxHeight,
+      //   overflowY: "auto",
+      //   overscrollBehavior: "contain", // gulir form tidak ikut menggulir halaman
+      //   scrollbarGutter: "stable",
+      // }}
     >
       <h2>Elemen Desain</h2>
 

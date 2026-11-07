@@ -98,12 +98,7 @@ export default function ConfigurationPage({
                   onSelectExtra={setSelectedExtraId}
                 />
               </div>
-              <div>
-                <SkirtPatternPreview
-                  design={design}
-                  measurements={measurements}
-                />
-              </div>
+              
             </>
           ) : (
             <div
@@ -116,14 +111,14 @@ export default function ConfigurationPage({
                 padding: "16px 0",
               }}
             >
+               <p style={{ textAlign: "center", margin: 0, fontWeight: 600 }}>
+                Lengkapi lingkar pinggang, lingkar pinggul, dan panjang rok
+              </p>
               <img
                 src={placeholderRok}
                 alt="Contoh siluet rok sebagai placeholder"
                 style={{ width: "100%", maxWidth: 320, height: "auto", opacity: 0.85 }}
               />
-              <p style={{ textAlign: "center", margin: 0, fontWeight: 600 }}>
-                Lengkapi lingkar pinggang, lingkar pinggul, dan panjang rok
-              </p>
               {missing.length < 3 && (
                 <p className="muted" style={{ textAlign: "center", margin: 0, fontSize: 13 }}>
                   Yang belum diisi: {missing.map((k) => FIELD_LABELS[k]).join(", ")}
@@ -148,7 +143,10 @@ export default function ConfigurationPage({
           />
         </div>
       </section>
-
+      <SkirtPatternPreview
+        design={design}
+        measurements={measurements}
+      />
       <DesignSummary
         customer={customer}
         design={design}

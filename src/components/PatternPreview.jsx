@@ -51,6 +51,33 @@ const MARGIN = 60; // ruang atas pola (untuk garis ukuran tepi atas dan kupnat)
 const SIDE = 56; // ruang kiri/kanan untuk angka ukuran
 const GAP = 64;
 
+/* Tata letak: potongan depan (kiri) dan belakang (kanan) berdampingan */
+const PATTERN_MAX_WIDTH = 960; // px, lebar total kedua gambar; kecilkan untuk gambar lebih kecil
+const sidesStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 16,
+  alignItems: "start",
+  maxWidth: PATTERN_MAX_WIDTH,
+  margin: "0 auto",
+};
+const svgStyle = { display: "block", width: "100%", height: "auto", color: "inherit" };
+const wideSvgStyle = { ...svgStyle, maxWidth: PATTERN_MAX_WIDTH, margin: "0 auto" };
+
+/* Tiap <svg> memuat penanda panahnya sendiri supaya tidak bergantung pada svg lain */
+function ArrowMarker() {
+  return (
+    <defs>
+      <marker
+        id="dim-arrow" viewBox="0 0 10 10" refX="9" refY="5"
+        markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+      >
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+      </marker>
+    </defs>
+  );
+}
+
 /* ---------- Motif kain ---------- */
 const MOTIF_SIZE_CM = 20; // samakan dengan SkirtFinalPreview
 
@@ -350,7 +377,7 @@ function PleatedView({ p, extras = [], pocketSide = "none", fabricColor, uid, mo
   const bandH = p.bandHeight * scale;
   const pieceH = (p.length + p.hem) * scale;
   const blockH = 64 + pieceH + 58; // ruang garis ukuran + potongan + keterangan
-  const yBand = blockH * 2 + 24;
+  const yBand = blockH * 2 + 24; // bagian bawah (ikat pinggang dst.) mulai setelah dua blok potongan
   const yOne = yBand + bandH + 72;
   const pocketSides = pocketSide === "both" ? ["left", "right"] : pocketSide === "none" ? [] : [pocketSide];
   const hasPocket = pocketSides.length > 0;
@@ -522,31 +549,38 @@ function PleatedView({ p, extras = [], pocketSide = "none", fabricColor, uid, mo
   return (
     <div className="pattern-preview">
       <p>
-        Pola plisket dibuka datar dalam dua potongan, depan dan belakang, skala
-        layar {fmt(scale)} unit per cm. Garis lipatan yang tegas dijahit dari
-        pinggang sampai garis pinggul, lalu di bawahnya putus-putus karena lipit
-        hanya disetrika. Area abu-abu di sisi kiri dan kanan adalah kampuh
-        samping, dan di bawah garis hem adalah kelim. Belum untuk dicetak sebagai
-        pola ukuran sebenarnya.
+        Pola plisket dibuka datar dalam dua potongan berdampingan, depan di kiri
+        dan belakang di kanan, skala layar {fmt(scale)} unit per cm. Garis
+        lipatan yang tegas dijahit dari pinggang sampai garis pinggul, lalu di
+        bawahnya putus-putus karena lipit hanya disetrika. Area abu-abu di sisi
+        kiri dan kanan adalah kampuh samping, dan di bawah garis hem adalah
+        kelim. Belum untuk dicetak sebagai pola ukuran sebenarnya.
       </p>
 
-      <svg
-        viewBox={`0 0 ${VIEW_W} ${svgH}`}
-        role="img"
-        aria-label="Visualisasi pola plisket potongan depan dan belakang, ikat pinggang, dan satu lipit"
-        style={{ display: "block", width: "100%", height: "auto", color: "inherit" }}
-      >
-        <defs>
-          <marker
-            id="dim-arrow" viewBox="0 0 10 10" refX="9" refY="5"
-            markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+      {/* potongan depan (kiri) dan belakang (kanan) berdampingan */}
+      <div style={sidesStyle}>
+        {[["Depan", 0], ["Belakang", blockH]].map(([name, y0]) => (
+          <svg
+            key={name}
+            viewBox={`0 ${y0} ${VIEW_W} ${blockH}`}
+            role="img"
+            aria-label={`Visualisasi pola plisket potongan ${name.toLowerCase()}`}
+            style={svgStyle}
           >
-            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
-          </marker>
-        </defs>
+            <ArrowMarker />
+            {renderPiece(name, y0)}
+          </svg>
+        ))}
+      </div>
 
-        {renderPiece("Depan", 0)}
-        {renderPiece("Belakang", blockH)}
+      {/* ikat pinggang, satu lipit, dan pola kantong di bawahnya */}
+      <svg
+        viewBox={`0 ${blockH * 2} ${VIEW_W} ${svgH - blockH * 2}`}
+        role="img"
+        aria-label="Visualisasi ikat pinggang, satu lipit, dan pola kantong"
+        style={wideSvgStyle}
+      >
+        <ArrowMarker />
 
         {/* ikat pinggang */}
         <g {...ext}>
@@ -664,7 +698,6 @@ function QuarterView({ pattern, extras, uid, pocketSide, fabricColor, motif }) {
   const pocketH = hasPocket ? pocketBlockHeight(openDx, depth, SCALE) + 30 : 0;
 
   const svgWidth = SIDE * 2 + panelWidth * 2 + PAIR_GAP;
-  const svgHeight = rowH * 2 + pocketH;
   const rightOx = SIDE + panelWidth + PAIR_GAP;
 
   /* ukuran ubin motif (px layar), sama dengan cara SkirtFinalPreview */
@@ -682,282 +715,297 @@ function QuarterView({ pattern, extras, uid, pocketSide, fabricColor, motif }) {
   const arrows = { markerStart: "url(#dim-arrow)", markerEnd: "url(#dim-arrow)" };
 
   return (
-    <div className="pattern-preview">
-      {/* <p>
-        Pola dibagi menjadi 4 potongan seperempat badan: depan kiri, depan kanan,
-        belakang kiri, dan belakang kanan (kiri dan kanan seperti pada gambar tampak
-        depan), skala layar {SCALE} unit per cm. Garis putus-putus panjang di tepi
-        yang saling berhadapan adalah garis tengah, dan tepi lainnya adalah kampuh
-        samping. Angka pada garis mendatar adalah lebar pola dari garis tengah sampai
-        kampuh samping, bukan jarak ke ujung kain. Angka pada garis tegak adalah
-        tinggi dari pinggang ke bawah. Angka di bawah panah tepi atas adalah lebar
-        kupnat, dan angka di samping kupnat adalah panjang kupnat. Area abu-abu di
-        bawah garis hem adalah kain untuk kelim ({fmt(pattern.hem)} cm), yang dilipat
-        ke dalam.
-        {hasPocket && " Garis putus-putus pendek yang melengkung di potongan depan adalah bukaan kantong; polanya ada di bagian terpisah di bawah."}
-        {" "}Belum untuk dicetak sebagai pola ukuran sebenarnya.
-      </p> */}
+    <section className="panel section-panel">
+      <h2>4. Pola Potong</h2>
+        <p className="muted">
+          Pola potong dibuat otomatis dari ukuran pelanggan dan model rok yang dipilih,
+          dalam potongan depan dan belakang lengkap.
+        </p>
+      <div className="pattern-preview">
+        {/* <p>
+          Pola dibagi menjadi 4 potongan seperempat badan: depan kiri, depan kanan,
+          belakang kiri, dan belakang kanan (kiri dan kanan seperti pada gambar tampak
+          depan), skala layar {SCALE} unit per cm. Garis putus-putus panjang di tepi
+          yang saling berhadapan adalah garis tengah, dan tepi lainnya adalah kampuh
+          samping. Angka pada garis mendatar adalah lebar pola dari garis tengah sampai
+          kampuh samping, bukan jarak ke ujung kain. Angka pada garis tegak adalah
+          tinggi dari pinggang ke bawah. Angka di bawah panah tepi atas adalah lebar
+          kupnat, dan angka di samping kupnat adalah panjang kupnat. Area abu-abu di
+          bawah garis hem adalah kain untuk kelim ({fmt(pattern.hem)} cm), yang dilipat
+          ke dalam.
+          {hasPocket && " Garis putus-putus pendek yang melengkung di potongan depan adalah bukaan kantong; polanya ada di bagian terpisah di bawah."}
+          {" "}Belum untuk dicetak sebagai pola ukuran sebenarnya.
+        </p> */}
 
-      <svg
-        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        role="img"
-        aria-label="Visualisasi pola konseptual rok dalam empat potongan, dan pola kantong bila dipilih"
-        style={{ display: "block", width: "100%", height: "auto", color: "inherit" }}
-      >
-        <defs>
-          <marker
-            id="dim-arrow" viewBox="0 0 10 10" refX="9" refY="5"
-            markerWidth="6" markerHeight="6" orient="auto-start-reverse"
-          >
-            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
-          </marker>
-        </defs>
+        {/* potongan depan (kiri) dan belakang (kanan) berdampingan */}
+        <div style={sidesStyle}>
+          {["front", "back"].map((part) => (
+            <svg
+              key={part}
+              viewBox={`0 ${part === "front" ? 0 : rowH} ${svgWidth} ${rowH}`}
+              role="img"
+              aria-label={`Visualisasi pola rok potongan ${part === "front" ? "depan" : "belakang"}`}
+              style={svgStyle}
+            >
+              <ArrowMarker />
 
-        {pieces.map((s) => {
-          const sg = s.side === "right" ? 1 : -1;
-          const { x, y } = s;
-          const yTop = y(0) - 30; // garis ukuran tepi atas
-          const yHemDim = y(pattern.cutLength) + 14; // garis ukuran bawah (di bawah tepi potong)
-          const outAnchor = sg === 1 ? "start" : "end"; // teks ke arah luar (kampuh samping)
-          const inAnchor = sg === 1 ? "end" : "start"; // teks ke arah garis tengah
-          const txX = x(0) - sg * 22;
-          const clipId = `${uid}-${s.part}-${s.side}`;
-          const pocketHere = s.part === "front" && pocketSides.includes(s.side);
+              {pieces.filter((s) => s.part === part).map((s) => {
+                const sg = s.side === "right" ? 1 : -1;
+                const { x, y } = s;
+                const yTop = y(0) - 30; // garis ukuran tepi atas
+                const yHemDim = y(pattern.cutLength) + 14; // garis ukuran bawah (di bawah tepi potong)
+                const outAnchor = sg === 1 ? "start" : "end"; // teks ke arah luar (kampuh samping)
+                const inAnchor = sg === 1 ? "end" : "start"; // teks ke arah garis tengah
+                const txX = x(0) - sg * 22;
+                const clipId = `${uid}-${s.part}-${s.side}`;
+                const pocketHere = s.part === "front" && pocketSides.includes(s.side);
 
-          return (
-            <g key={`${s.part}-${s.side}`}>
-              <defs>
-                <clipPath id={clipId}>
-                  <path d={s.outline} />
-                </clipPath>
-                {/* ubin motif berpusat di garis tengah, seperti pada rok jadi */}
-                {motif && (
-                  <pattern
-                    id={`${clipId}-motif`} patternUnits="userSpaceOnUse"
-                    x={x(0) - motifW / 2} y={y(0)} width={motifW} height={motifH}
-                  >
-                    <image href={motif.src} width={motifW} height={motifH} preserveAspectRatio="none" />
-                  </pattern>
-                )}
-              </defs>
-
-              {/* Latar warna kain pada potongan pola */}
-              <path
-                d={s.outline}
-                fill={fabricColor || "currentColor"}
-                fillOpacity={fabricColor ? "0.35" : "0.04"}
-              />
-
-              {/* Motif kain pada potongan pola */}
-              {motif && <path d={s.outline} fill={`url(#${clipId}-motif)`} fillOpacity="0.35" />}
-
-              {/* Area kelim */}
-              <path d={s.allowance} fill="currentColor" fillOpacity="0.14" />
-              <path d={s.outline} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-              {/* garis hem (panjang jadi) */}
-              <line
-                x1={x(0)} x2={x(pattern.hemWidth)} y1={y(pattern.length)} y2={y(pattern.length)}
-                stroke="currentColor" strokeOpacity="0.7" strokeDasharray="2 3"
-              />
-              <text
-                x={x(pattern.hemCutWidth) + sg * 6} y={y(pattern.length) + 4}
-                fontSize="10" fill="currentColor" fillOpacity="0.8" textAnchor={outAnchor}
-              >
-                hem
-              </text>
-
-              {/* hiasan tambahan: area penempatan renda, layer, pita */}
-              {extras
-                .filter((e) => appliesTo(e, s.part))
-                .map((e) => {
-                  const span = sideSpan(e, s.side, panelWidth / SCALE);
-                  if (!span) return null;
-                  const a = x(span[0]);
-                  const b = x(span[1]);
-                  const ex = Math.min(a, b);
-                  const ew = Math.abs(b - a);
-                  const ey = y(e.top);
-                  const eh = e.height * SCALE;
-                  return (
-                    <g key={e.id}>
-                      <g clipPath={`url(#${clipId})`}>
-                        <rect x={ex} y={ey} width={ew} height={eh} fill={e.color} fillOpacity="0.5" />
-                        <rect
-                          x={ex} y={ey} width={ew} height={eh} fill="currentColor" fillOpacity="0.08"
-                          stroke="currentColor" strokeOpacity="0.7" strokeDasharray="3 2"
-                        />
-                      </g>
-                      <text x={ex + 3} y={ey + 10} fontSize="9" fill="currentColor">{e.label}</text>
-                    </g>
-                  );
-                })}
-
-              {/* bukaan kantong (hanya potongan depan di sisi yang dipilih) */}
-              {pocketHere &&
-                (() => {
-                  const u0 = pattern.topWidth - insetCm;
-                  const u1 = sideWidthAt(pattern, depth);
-                  const c = depth * 0.62;
-                  const d = `M ${x(u0)} ${y(0)} Q ${x(u0)} ${y(c)} ${x(u1)} ${y(depth)}`;
-                  const dimXo = x(u1) + sg * 14; // garis ukuran tegak di luar kampuh samping
-                  return (
-                    <g>
-                      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 3" />
-                      <circle cx={x(u0)} cy={y(0)} r="2" fill="currentColor" />
-                      <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
-                        <line x1={x(u0)} x2={x(pattern.topWidth)} y1={y(1.8)} y2={y(1.8)} {...arrows} />
-                        <line x1={x(pattern.topWidth)} x2={dimXo} y1={y(0)} y2={y(0)} strokeOpacity="0.35" />
-                        <line x1={x(u1)} x2={dimXo} y1={y(depth)} y2={y(depth)} strokeOpacity="0.35" />
-                        <line x1={dimXo} x2={dimXo} y1={y(0)} y2={y(depth)} {...arrows} />
-                      </g>
-                      <g fill="currentColor" fontSize="9">
-                        <text x={(x(u0) + x(pattern.topWidth)) / 2} y={y(1.8) + 11} textAnchor="middle">
-                          {fmt(Math.round(insetCm * 10) / 10)} cm
-                        </text>
-                        <text x={dimXo + sg * 6} y={y(depth / 2) + 3} textAnchor={outAnchor}>
-                          {fmt(Math.round(depth * 10) / 10)} cm
-                        </text>
-                        <text textAnchor={inAnchor}>
-                          <tspan x={x(u0 + 0.5625 * (u1 - u0)) - sg * 8} y={y(depth * 0.795) - 2}>bukaan</tspan>
-                          <tspan x={x(u0 + 0.5625 * (u1 - u0)) - sg * 8} y={y(depth * 0.795) + 8}>kantong</tspan>
-                        </text>
-                      </g>
-                    </g>
-                  );
-                })()}
-
-              {s.darts.map((d, i) => (
-                <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth="1" />
-              ))}
-              {/* lebar kupnat: garis kecil + angka di bawah panah tepi atas */}
-              {s.dartMarks.map((m, i) => {
-                const half = s.dartWcm / 2;
                 return (
-                  <g key={`w${i}`}>
-                    <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
-                      <line x1={x(m.u - half)} x2={x(m.u + half)} y1={y(0) - 8} y2={y(0) - 8} />
-                      <line x1={x(m.u - half)} x2={x(m.u - half)} y1={y(0) - 12} y2={y(0) - 4} />
-                      <line x1={x(m.u + half)} x2={x(m.u + half)} y1={y(0) - 12} y2={y(0) - 4} />
-                    </g>
-                    <text x={m.x} y={y(0) - 14} fontSize="9" textAnchor="middle" fill="currentColor">
-                      {fmt(s.dartWcm)} cm
+                  <g key={`${s.part}-${s.side}`}>
+                    <defs>
+                      <clipPath id={clipId}>
+                        <path d={s.outline} />
+                      </clipPath>
+                      {/* ubin motif berpusat di garis tengah, seperti pada rok jadi */}
+                      {motif && (
+                        <pattern
+                          id={`${clipId}-motif`} patternUnits="userSpaceOnUse"
+                          x={x(0) - motifW / 2} y={y(0)} width={motifW} height={motifH}
+                        >
+                          <image href={motif.src} width={motifW} height={motifH} preserveAspectRatio="none" />
+                        </pattern>
+                      )}
+                    </defs>
+
+                    {/* Latar warna kain pada potongan pola */}
+                    <path
+                      d={s.outline}
+                      fill={fabricColor || "currentColor"}
+                      fillOpacity={fabricColor ? "0.35" : "0.04"}
+                    />
+
+                    {/* Motif kain pada potongan pola */}
+                    {motif && <path d={s.outline} fill={`url(#${clipId}-motif)`} fillOpacity="0.35" />}
+
+                    {/* Area kelim */}
+                    <path d={s.allowance} fill="currentColor" fillOpacity="0.14" />
+                    <path d={s.outline} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                    {/* garis hem (panjang jadi) */}
+                    <line
+                      x1={x(0)} x2={x(pattern.hemWidth)} y1={y(pattern.length)} y2={y(pattern.length)}
+                      stroke="currentColor" strokeOpacity="0.7" strokeDasharray="2 3"
+                    />
+                    <text
+                      x={x(pattern.hemCutWidth) + sg * 6} y={y(pattern.length) + 4}
+                      fontSize="10" fill="currentColor" fillOpacity="0.8" textAnchor={outAnchor}
+                    >
+                      hem
                     </text>
+
+                    {/* hiasan tambahan: area penempatan renda, layer, pita */}
+                    {extras
+                      .filter((e) => appliesTo(e, s.part))
+                      .map((e) => {
+                        const span = sideSpan(e, s.side, panelWidth / SCALE);
+                        if (!span) return null;
+                        const a = x(span[0]);
+                        const b = x(span[1]);
+                        const ex = Math.min(a, b);
+                        const ew = Math.abs(b - a);
+                        const ey = y(e.top);
+                        const eh = e.height * SCALE;
+                        return (
+                          <g key={e.id}>
+                            <g clipPath={`url(#${clipId})`}>
+                              <rect x={ex} y={ey} width={ew} height={eh} fill={e.color} fillOpacity="0.5" />
+                              <rect
+                                x={ex} y={ey} width={ew} height={eh} fill="currentColor" fillOpacity="0.08"
+                                stroke="currentColor" strokeOpacity="0.7" strokeDasharray="3 2"
+                              />
+                            </g>
+                            <text x={ex + 3} y={ey + 10} fontSize="9" fill="currentColor">{e.label}</text>
+                          </g>
+                        );
+                      })}
+
+                    {/* bukaan kantong (hanya potongan depan di sisi yang dipilih) */}
+                    {pocketHere &&
+                      (() => {
+                        const u0 = pattern.topWidth - insetCm;
+                        const u1 = sideWidthAt(pattern, depth);
+                        const c = depth * 0.62;
+                        const d = `M ${x(u0)} ${y(0)} Q ${x(u0)} ${y(c)} ${x(u1)} ${y(depth)}`;
+                        const dimXo = x(u1) + sg * 14; // garis ukuran tegak di luar kampuh samping
+                        return (
+                          <g>
+                            <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 3" />
+                            <circle cx={x(u0)} cy={y(0)} r="2" fill="currentColor" />
+                            <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
+                              <line x1={x(u0)} x2={x(pattern.topWidth)} y1={y(1.8)} y2={y(1.8)} {...arrows} />
+                              <line x1={x(pattern.topWidth)} x2={dimXo} y1={y(0)} y2={y(0)} strokeOpacity="0.35" />
+                              <line x1={x(u1)} x2={dimXo} y1={y(depth)} y2={y(depth)} strokeOpacity="0.35" />
+                              <line x1={dimXo} x2={dimXo} y1={y(0)} y2={y(depth)} {...arrows} />
+                            </g>
+                            <g fill="currentColor" fontSize="9">
+                              <text x={(x(u0) + x(pattern.topWidth)) / 2} y={y(1.8) + 11} textAnchor="middle">
+                                {fmt(Math.round(insetCm * 10) / 10)} cm
+                              </text>
+                              <text x={dimXo + sg * 6} y={y(depth / 2) + 3} textAnchor={outAnchor}>
+                                {fmt(Math.round(depth * 10) / 10)} cm
+                              </text>
+                              <text textAnchor={inAnchor}>
+                                <tspan x={x(u0 + 0.5625 * (u1 - u0)) - sg * 8} y={y(depth * 0.795) - 2}>bukaan</tspan>
+                                <tspan x={x(u0 + 0.5625 * (u1 - u0)) - sg * 8} y={y(depth * 0.795) + 8}>kantong</tspan>
+                              </text>
+                            </g>
+                          </g>
+                        );
+                      })()}
+
+                    {s.darts.map((d, i) => (
+                      <path key={i} d={d} fill="none" stroke="currentColor" strokeWidth="1" />
+                    ))}
+                    {/* lebar kupnat: garis kecil + angka di bawah panah tepi atas */}
+                    {s.dartMarks.map((m, i) => {
+                      const half = s.dartWcm / 2;
+                      return (
+                        <g key={`w${i}`}>
+                          <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
+                            <line x1={x(m.u - half)} x2={x(m.u + half)} y1={y(0) - 8} y2={y(0) - 8} />
+                            <line x1={x(m.u - half)} x2={x(m.u - half)} y1={y(0) - 12} y2={y(0) - 4} />
+                            <line x1={x(m.u + half)} x2={x(m.u + half)} y1={y(0) - 12} y2={y(0) - 4} />
+                          </g>
+                          <text x={m.x} y={y(0) - 14} fontSize="9" textAnchor="middle" fill="currentColor">
+                            {fmt(s.dartWcm)} cm
+                          </text>
+                        </g>
+                      );
+                    })}
+                    {/* panjang kupnat: angka di samping kupnat (arah kampuh samping) */}
+                    {s.dartMarks.map((m, i) => (
+                      <text
+                        key={`l${i}`}
+                        x={m.x + (pocketHere ? -sg : sg) * (s.dartWcm * SCALE / 2 + 5)}
+                        y={(y(0) + m.y) / 2 + 3}
+                        fontSize="9" fill="currentColor" textAnchor={pocketHere ? inAnchor : outAnchor}
+                      >
+                        {fmt(s.dartLcm)} cm
+                      </text>
+                    ))}
+
+                    {/* garis tengah */}
+                    <line
+                      x1={x(0)} x2={x(0)} y1={y(0)} y2={y(pattern.cutLength)}
+                      stroke="currentColor" strokeOpacity="0.6" strokeDasharray="6 3" strokeWidth="1.5"
+                    />
+
+                    {/* garis bantu ke garis ukuran atas dan bawah */}
+                    <g stroke="currentColor" strokeOpacity="0.35" strokeWidth="1">
+                      <line x1={x(0)} x2={x(0)} y1={y(0)} y2={yTop - 4} />
+                      <line x1={x(pattern.topWidth)} x2={x(pattern.topWidth)} y1={y(0)} y2={yTop - 4} />
+                      <line x1={x(0)} x2={x(0)} y1={y(pattern.cutLength)} y2={yHemDim + 4} />
+                      <line x1={x(pattern.hemWidth)} x2={x(pattern.hemWidth)} y1={y(pattern.length)} y2={yHemDim + 4} />
+                    </g>
+
+                    {/* garis ukuran mendatar: atas, pinggul, hem */}
+                    <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
+                      <line x1={x(0)} x2={x(pattern.topWidth)} y1={yTop} y2={yTop} {...arrows} />
+                      <line x1={x(0)} x2={x(pattern.hipWidth)} y1={y(pattern.hipDepth)} y2={y(pattern.hipDepth)} {...arrows} />
+                      <line x1={x(0)} x2={x(pattern.hemWidth)} y1={yHemDim} y2={yHemDim} {...arrows} />
+                    </g>
+
+                    {/* garis ukuran tegak di sisi garis tengah:
+                        pinggang ke hem, lalu hem ke tepi potong (kelim) */}
+                    <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
+                      <line x1={x(0) - sg * 14} x2={x(0) - sg * 14} y1={y(0)} y2={y(pattern.length)} {...arrows} />
+                      <line x1={x(0) - sg * 14} x2={x(0) - sg * 14} y1={y(pattern.length)} y2={y(pattern.cutLength)} {...arrows} />
+                      <line x1={x(0) - sg * 19} x2={x(0) - sg * 9} y1={y(pattern.hipDepth)} y2={y(pattern.hipDepth)} />
+                    </g>
+
+                    <g fill="currentColor" fontSize="11" textAnchor="middle">
+                      <text x={x(pattern.topWidth / 2)} y={yTop - (hasDart ? 18 : 6)}>
+                        {hasDart ? "Tepi atas " : "Lebar pinggang "}{fmt(pattern.topWidth)} cm
+                      </text>
+                      {hasDart && (
+                        <text x={x(pattern.topWidth / 2)} y={yTop - 6} fontSize="10" fillOpacity="0.75">
+                          jadi {fmt(pattern.waistWidth)} cm setelah kupnat
+                        </text>
+                      )}
+                      <text x={x(pattern.hipWidth / 2)} y={y(pattern.hipDepth) + 14}>
+                        Lebar pinggul {fmt(pattern.hipWidth)} cm
+                      </text>
+                      <text x={x(pattern.hemWidth / 2)} y={yHemDim + 16}>
+                        Lebar hem {fmt(pattern.hemWidth)} cm
+                      </text>
+                      <text x={x(pattern.hemWidth / 2)} y={yHemDim + 29} fontSize="10" fillOpacity="0.8">
+                        kelim {fmt(pattern.hem)} cm
+                      </text>
+                      <text x={s.ox + panelWidth / 2} y={s.oy + rowH - 6} fontSize="12" fontWeight="600">{s.label}</text>
+                    </g>
+
+                    <g fill="currentColor" fontSize="11" textAnchor={inAnchor === "end" ? "end" : "start"}>
+                      <text x={txX} y={(y(0) + y(pattern.hipDepth)) / 2 + 4}>
+                        {fmt(pattern.hipDepth)} cm
+                      </text>
+                      <text x={txX} y={(y(pattern.hipDepth) + y(pattern.length)) / 2 + 4}>
+                        {fmt(pattern.length - pattern.hipDepth)} cm
+                      </text>
+                      <text x={txX} y={(y(pattern.length) + y(pattern.cutLength)) / 2 + 4} fontSize="10">
+                        {fmt(pattern.hem)} cm
+                      </text>
+                    </g>
                   </g>
                 );
               })}
-              {/* panjang kupnat: angka di samping kupnat (arah kampuh samping) */}
-              {s.dartMarks.map((m, i) => (
-                <text
-                  key={`l${i}`}
-                  x={m.x + (pocketHere ? -sg : sg) * (s.dartWcm * SCALE / 2 + 5)}
-                  y={(y(0) + m.y) / 2 + 3}
-                  fontSize="9" fill="currentColor" textAnchor={pocketHere ? inAnchor : outAnchor}
-                >
-                  {fmt(s.dartLcm)} cm
-                </text>
-              ))}
+            </svg>
+          ))}
+        </div>
 
-              {/* garis tengah */}
-              <line
-                x1={x(0)} x2={x(0)} y1={y(0)} y2={y(pattern.cutLength)}
-                stroke="currentColor" strokeOpacity="0.6" strokeDasharray="6 3" strokeWidth="1.5"
-              />
-
-              {/* garis bantu ke garis ukuran atas dan bawah */}
-              <g stroke="currentColor" strokeOpacity="0.35" strokeWidth="1">
-                <line x1={x(0)} x2={x(0)} y1={y(0)} y2={yTop - 4} />
-                <line x1={x(pattern.topWidth)} x2={x(pattern.topWidth)} y1={y(0)} y2={yTop - 4} />
-                <line x1={x(0)} x2={x(0)} y1={y(pattern.cutLength)} y2={yHemDim + 4} />
-                <line x1={x(pattern.hemWidth)} x2={x(pattern.hemWidth)} y1={y(pattern.length)} y2={yHemDim + 4} />
-              </g>
-
-              {/* garis ukuran mendatar: atas, pinggul, hem */}
-              <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
-                <line x1={x(0)} x2={x(pattern.topWidth)} y1={yTop} y2={yTop} {...arrows} />
-                <line x1={x(0)} x2={x(pattern.hipWidth)} y1={y(pattern.hipDepth)} y2={y(pattern.hipDepth)} {...arrows} />
-                <line x1={x(0)} x2={x(pattern.hemWidth)} y1={yHemDim} y2={yHemDim} {...arrows} />
-              </g>
-
-              {/* garis ukuran tegak di sisi garis tengah:
-                  pinggang ke hem, lalu hem ke tepi potong (kelim) */}
-              <g stroke="currentColor" strokeOpacity="0.7" strokeWidth="1">
-                <line x1={x(0) - sg * 14} x2={x(0) - sg * 14} y1={y(0)} y2={y(pattern.length)} {...arrows} />
-                <line x1={x(0) - sg * 14} x2={x(0) - sg * 14} y1={y(pattern.length)} y2={y(pattern.cutLength)} {...arrows} />
-                <line x1={x(0) - sg * 19} x2={x(0) - sg * 9} y1={y(pattern.hipDepth)} y2={y(pattern.hipDepth)} />
-              </g>
-
-              <g fill="currentColor" fontSize="11" textAnchor="middle">
-                <text x={x(pattern.topWidth / 2)} y={yTop - (hasDart ? 18 : 6)}>
-                  {hasDart ? "Tepi atas " : "Lebar pinggang "}{fmt(pattern.topWidth)} cm
-                </text>
-                {hasDart && (
-                  <text x={x(pattern.topWidth / 2)} y={yTop - 6} fontSize="10" fillOpacity="0.75">
-                    jadi {fmt(pattern.waistWidth)} cm setelah kupnat
-                  </text>
-                )}
-                <text x={x(pattern.hipWidth / 2)} y={y(pattern.hipDepth) + 14}>
-                  Lebar pinggul {fmt(pattern.hipWidth)} cm
-                </text>
-                <text x={x(pattern.hemWidth / 2)} y={yHemDim + 16}>
-                  Lebar hem {fmt(pattern.hemWidth)} cm
-                </text>
-                <text x={x(pattern.hemWidth / 2)} y={yHemDim + 29} fontSize="10" fillOpacity="0.8">
-                  kelim {fmt(pattern.hem)} cm
-                </text>
-                <text x={s.ox + panelWidth / 2} y={s.oy + rowH - 6} fontSize="12" fontWeight="600">{s.label}</text>
-              </g>
-
-              <g fill="currentColor" fontSize="11" textAnchor={inAnchor === "end" ? "end" : "start"}>
-                <text x={txX} y={(y(0) + y(pattern.hipDepth)) / 2 + 4}>
-                  {fmt(pattern.hipDepth)} cm
-                </text>
-                <text x={txX} y={(y(pattern.hipDepth) + y(pattern.length)) / 2 + 4}>
-                  {fmt(pattern.length - pattern.hipDepth)} cm
-                </text>
-                <text x={txX} y={(y(pattern.length) + y(pattern.cutLength)) / 2 + 4} fontSize="10">
-                  {fmt(pattern.hem)} cm
-                </text>
-              </g>
-            </g>
-          );
-        })}
-
+        {/* pola kantong di bawah potongan depan dan belakang */}
         {hasPocket && (
-          <PocketBlock
-            y0={rowH * 2 + 8} x0={SIDE + 20} dx={openDx} depth={depth}
-            count={pocketSides.length * 2} sides={pocketSides} scale={SCALE}
-            fabricColor={fabricColor} motif={motif} uid={uid}
-          />
+          <svg
+            viewBox={`0 ${rowH * 2} ${svgWidth} ${pocketH}`}
+            role="img"
+            aria-label="Pola kantong"
+            style={wideSvgStyle}
+          >
+            <ArrowMarker />
+            <PocketBlock
+              y0={rowH * 2 + 8} x0={SIDE + 20} dx={openDx} depth={depth}
+              count={pocketSides.length * 2} sides={pocketSides} scale={SCALE}
+              fabricColor={fabricColor} motif={motif} uid={uid}
+            />
+          </svg>
         )}
-      </svg>
 
-      {pattern.dartTotal > 0.05 &&
-        ["front", "back"].map((k) => {
-          const s = pieces.find((q) => q.part === k);
-          return (
-            <p key={k}>
-              Kupnat {k === "front" ? "depan" : "belakang"}: {s.n} per potongan,
-              lebar {fmt(s.dartWcm)} cm, panjang {fmt(s.dartLcm)} cm
-            </p>
-          );
-        })}
-      {pocketSides.map((sd) => (
-        <p key={sd}>
-          Kantong {sd === "left" ? "kiri" : "kanan"} (potongan depan {sd === "left" ? "kiri" : "kanan"}):
-          bukaan dimulai {fmt(Math.round(insetCm * 10) / 10)} cm dari kampuh samping di tepi atas
-          dan berakhir {fmt(Math.round(depth * 10) / 10)} cm di bawah pinggang pada kampuh samping,
-          panjang bukaan ± {fmt(Math.round(curveLen(openDx, depth) * 10) / 10)} cm
-        </p>
-      ))}
-      <p>Kelim: {fmt(pattern.hem)} cm di bawah garis hem</p>
-      {extras.map((e) => (
-        <p key={e.id}>Tambahan, {describeExtra(e)}</p>
-      ))}
-      <p>Panjang potong: {fmt(pattern.cutLength)} cm (panjang rok {fmt(pattern.length)} cm + kelim {fmt(pattern.hem)} cm)</p>
-      <p>Lingkar pinggang: {fmt(pattern.waist)} cm</p>
-      <p>Lingkar pinggul: {fmt(pattern.hip)} cm</p>
-      <p>Panjang rok: {fmt(pattern.length)} cm</p>
-    </div>
+        {pattern.dartTotal > 0.05 &&
+          ["front", "back"].map((k) => {
+            const s = pieces.find((q) => q.part === k);
+            return (
+              <p key={k}>
+                Kupnat {k === "front" ? "depan" : "belakang"}: {s.n} per potongan,
+                lebar {fmt(s.dartWcm)} cm, panjang {fmt(s.dartLcm)} cm
+              </p>
+            );
+          })}
+        {pocketSides.map((sd) => (
+          <p key={sd}>
+            Kantong {sd === "left" ? "kiri" : "kanan"} (potongan depan {sd === "left" ? "kiri" : "kanan"}):
+            bukaan dimulai {fmt(Math.round(insetCm * 10) / 10)} cm dari kampuh samping di tepi atas
+            dan berakhir {fmt(Math.round(depth * 10) / 10)} cm di bawah pinggang pada kampuh samping,
+            panjang bukaan ± {fmt(Math.round(curveLen(openDx, depth) * 10) / 10)} cm
+          </p>
+        ))}
+        <p>Kelim: {fmt(pattern.hem)} cm di bawah garis hem</p>
+        {extras.map((e) => (
+          <p key={e.id}>Tambahan, {describeExtra(e)}</p>
+        ))}
+        <p>Panjang potong: {fmt(pattern.cutLength)} cm (panjang rok {fmt(pattern.length)} cm + kelim {fmt(pattern.hem)} cm)</p>
+        <p>Lingkar pinggang: {fmt(pattern.waist)} cm</p>
+        <p>Lingkar pinggul: {fmt(pattern.hip)} cm</p>
+        <p>Panjang rok: {fmt(pattern.length)} cm</p>
+      </div>
+    </section>
   );
 }
 
